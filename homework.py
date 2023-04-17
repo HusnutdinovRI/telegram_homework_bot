@@ -58,8 +58,8 @@ def get_api_answer(timestamp) -> dict:
         if response.status_code != HTTPStatus.OK:
             raise RuntimeError('Проблема доступа к эндпойнту')
         return response.json()
-    except requests.RequestException('Проблема доступа к эндпойнту'):
-        return {}
+    except requests.RequestException:
+        raise RuntimeError('Проблема доступа к эндпойнту')
 
 
 def check_response(response) -> None:
@@ -67,7 +67,7 @@ def check_response(response) -> None:
     if not isinstance(response, dict) or not isinstance(
             response.get('homeworks'), list):
         raise TypeError('Тип данных отличается от ожидаемого')
-    if 'homeworks' not in response:
+    if response.get('homeworks') is None:
         raise KeyError('Отсуствуюет ключ homeworks')
 
 
@@ -91,13 +91,12 @@ def main() -> None:
         logging.critical('Отсутствуют обязательные переменные окружения')
         sys.exit()
     bot = telegram.Bot(token=TELEGRAM_TOKEN)
-    print()
     while True:
         try:
             timestamp = int(time.time())
             response = get_api_answer(timestamp)
             check_response(response)
-            if response['homeworks']:
+            if response.get('homeworks') is not None:
                 homework = response['homeworks'][0]
                 message = parse_status(homework)
                 send_message(bot, message)
