@@ -67,7 +67,7 @@ def check_response(response) -> None:
     if not isinstance(response, dict) or not isinstance(
             response.get('homeworks'), list):
         raise TypeError('Тип данных отличается от ожидаемого')
-    if response.get('homeworks') is None:
+    if not response:
         raise KeyError('Отсуствуюет ключ homeworks')
 
 
@@ -96,9 +96,9 @@ def main() -> None:
             timestamp = int(time.time())
             response = get_api_answer(timestamp)
             check_response(response)
-            if response.get('homeworks') is not None:
-                homework = response['homeworks'][0]
-                message = parse_status(homework)
+            homework = response.get('homeworks')
+            if homework:
+                message = parse_status(homework[0])
                 send_message(bot, message)
         except Exception as error:
             logging.error(f'Сбой в работе программы: {error}')
