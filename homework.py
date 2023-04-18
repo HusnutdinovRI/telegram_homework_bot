@@ -9,6 +9,8 @@ from http import HTTPStatus
 from logging import StreamHandler
 from dotenv import load_dotenv
 
+from exeption import EmptyListError
+
 load_dotenv()
 
 logger = logging.getLogger(__name__)
@@ -47,7 +49,7 @@ def send_message(bot, message) -> None:
     except telegram.TelegramError as error:
         logger.error(error)
     else:
-        logger.debug('Сообщение успешно отпавлено')
+        logger.debug('Сообщение успешно отправлено')
 
 
 def get_api_answer(timestamp) -> dict:
@@ -62,13 +64,14 @@ def get_api_answer(timestamp) -> dict:
         raise RuntimeError('Проблема доступа к эндпойнту')
 
 
-def check_response(response) -> None:
+def check_response(response) -> list:
     """Проверяет ответ API на соответствие документации."""
     if not isinstance(response, dict) or not isinstance(
             response.get('homeworks'), list):
         raise TypeError('Тип данных отличается от ожидаемого')
-    if not response:
-        raise KeyError('Отсуствуюет ключ homeworks')
+    if not response.get('homeworks'):
+        raise EmptyListError('Список "homeworks" пуст')
+    return response['homeworks']
 
 
 def parse_status(homework) -> str:
@@ -95,8 +98,7 @@ def main() -> None:
         try:
             timestamp = int(time.time())
             response = get_api_answer(timestamp)
-            check_response(response)
-            homework = response.get('homeworks')
+            homework = check_response(response)
             if homework:
                 message = parse_status(homework[0])
                 send_message(bot, message)
